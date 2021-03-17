@@ -4,91 +4,151 @@ using UnityEngine;
 
 public class characterMovement : MonoBehaviour
 {
-    private const float _movementSpeed   = 10f;
-    private const float _jumpForce       = 13.5f;
-    private const float _baseGravity     = 30.0f;
-    private const float _fastFallGravity = 70.0f;
+    private const float acceleration    = 150.0f;
+    private const float maxSpeed        = 15f;
+    private const float jumpForce       = 17.0f;
+    private const float baseGravity     = 40.0f;
+    private const float fastFallGravity = 100.0f;
+    private const float jumpBufferTime  = 0.1f;
+    private const float coyoteTime      = 0.07f;
 
-    private float _gravity = _baseGravity;
+    public float airTime = 0.0f;
+    private bool jumped   = false;
 
-    private bool _leftPressed        = false;
-    private bool _rightPressed       = false;
-    private bool _spacePressed       = false;
-    private int  _horizontalMovement = 0;
+    private float gravity = baseGravity;
 
-    private bool _onGround = false;
+    private bool leftPressed        = false;
+    private bool rightPressed       = false;
+    private bool spacePressed       = false;
+    private float spacePressedTime  = 0.0f;
 
-    private Vector2 _motion = new Vector2(0, 0);
+    private int  horizontalMovement = 0;
 
-    private Rigidbody2D _rigidbody;
+    private bool onGround = false;
+
+    private Vector2 motion = new Vector2(0, 0);
+
+    private Rigidbody2D rigidbody;
+
+    private BoxCollider2D groundChecker;
+    private BoxCollider2D ceilingChecker;
+    private BoxCollider2D wallCheckerLeft;
+    private BoxCollider2D wallCheckerRight;
 
     // Start is called before the first frame update
     void Start()
     {
-        _rigidbody = GetComponent<Rigidbody2D>();
+        rigidbody        = GetComponent<Rigidbody2D>();
+        groundChecker    = GameObject.Find("GroundChecker").GetComponent<BoxCollider2D>();
+        ceilingChecker   = GameObject.Find("CeilingChecker").GetComponent<BoxCollider2D>();
+        wallCheckerLeft  = GameObject.Find("WallCheckerLeft").GetComponent<BoxCollider2D>();
+        wallCheckerRight = GameObject.Find("WallCheckerRight").GetComponent<BoxCollider2D>();
     }
 
     // Update is called once per frame
     void Update()
     {
-
-    }
-
-    private void FixedUpdate()
-    {
         // Get input
-        _leftPressed = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A);
-        _rightPressed = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D);
-        if (_leftPressed && _rightPressed)
+        leftPressed = Input.GetKey(KeyCode.LeftArrow) || Input.GetKey(KeyCode.A);
+        rightPressed = Input.GetKey(KeyCode.RightArrow) || Input.GetKey(KeyCode.D);
+        if (leftPressed && rightPressed)
         {
-            _horizontalMovement = 0;
+            horizontalMovement = 0;
         }
-        else if (_leftPressed)
+        else if (leftPressed)
         {
-            _horizontalMovement = -1;
+            horizontalMovement = -1;
         }
-        else if (_rightPressed)
+        else if (rightPressed)
         {
-            _horizontalMovement = 1;
+            horizontalMovement = 1;
         }
         else
         {
-            _horizontalMovement = 0;
+            horizontalMovement = 0;
         }
-        _spacePressed = Input.GetKey(KeyCode.Space);
+        spacePressed = Input.GetKey(KeyCode.Space);
+        if (spacePressed)
+        {
+            spacePressedTime += Time.deltaTime;
+        }
+        else
+        {
+            spacePressedTime = 0.0f;
+        }
+
+        // Check if player is on ground
+        if (groundChecker.IsTouchingLayers())
+        {
+            onGround = true;
+            motion.y = 0;
+            airTime = 0.0f;
+            jumped = false;
+        }
+        else
+        {
+            onGround = false;
+            airTime += Time.deltaTime;
+        }
+
+        if (ceilingChecker.IsTouchingLayers())
+        {
+            motion.y = -0.5f;
+        }
 
         // Move player
-        _motion = new Vector2(_horizontalMovement * _movementSpeed, _motion.y);
-        if (!_onGround)
+        if (horizontalMovement == -1)
         {
-            _motion.y -= _gravity * Time.deltaTime;
+            motion.x -= acceleration * Time.deltaTime;
+            motion.x = Mathf.Max(motion.x, -maxSpeed);
         }
-
-        if (_spacePressed && _onGround)
+        else if (horizontalMovement == 1)
         {
-            _motion.y = _jumpForce;
-        }
-
-        if (!_spacePressed && !_onGround && _motion.y > 0.0f)
-        {
-            _gravity = _fastFallGravity;
+            motion.x += acceleration * Time.deltaTime;
+            motion.x = Mathf.Min(motion.x, maxSpeed);
         }
         else
         {
-            _gravity = _baseGravity;
+            if (motion.x < 0)
+            {
+                motion.x = Mathf.Min(0.0f, motion.x + acceleration * Time.deltaTime);
+            }
+            else if (motion.x > 0)
+            {
+                motion.x = Mathf.Max(0.0f, motion.x - acceleration * Time.deltaTime);
+            }
+        }
+        
+        // Check whether player is touching a wall
+        if (wallCheckerLeft.IsTouchingLayers())
+        {
+            motion.x = Mathf.Max(motion.x, 0.0f);
+        }
+        else if (wallCheckerRight.IsTouchingLayers())
+        {
+            motion.x = Mathf.Min(motion.x, 0.0f);
         }
 
-        _rigidbody.velocity = _motion;
-    }
+        if (!onGround)
+        {
+            motion.y -= gravity * Time.deltaTime;
+        }
 
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        _onGround = true;
-        _motion.y = 0;
-    }
+        if (spacePressed && spacePressedTime < jumpBufferTime && airTime < coyoteTime && !jumped)
+        {
+            motion.y = jumpForce;
+            jumped = true;
+        }
 
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        _onGround = false;
+        if (!spacePressed && !onGround && motion.y > 0.0f)
+        {
+            gravity = fastFallGravity;
+        }
+        else
+        {
+            gravity = baseGravity;
+        }
+
+        rigidbody.velocity = motion;
     }
 }
