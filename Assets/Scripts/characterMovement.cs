@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class characterMovement : MonoBehaviour
 {
@@ -12,7 +14,7 @@ public class characterMovement : MonoBehaviour
     private const float jumpBufferTime  = 0.1f;
     private const float coyoteTime      = 0.07f;
 
-    public float airTime = 0.0f;
+    private float airTime = 0.0f;
     private bool jumped   = false;
 
     private float gravity = baseGravity;
@@ -151,4 +153,24 @@ public class characterMovement : MonoBehaviour
 
         rigidbody.velocity = motion;
     }
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.tag == "SpikeUp" && motion.y <= 0.0f)
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+        else if (collision.gameObject.tag == "SpikeDown" && motion.y >= 0.0f)
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+        else if (collision.gameObject.tag == "SpikeRight" && motion.x < 0.1f)
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+        else if (collision.gameObject.tag == "SpikeLeft" && motion.x > -0.1f)
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+    }
 }
+
