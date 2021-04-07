@@ -9,6 +9,7 @@ TagManager:
   - SpikeDown
   - SpikeRight
   - SpikeLeft
+  - ScreenEnd
   layers:
   - Default
   - TransparentFX

@@ -38,6 +38,8 @@ public class characterMovement : MonoBehaviour
     private BoxCollider2D wallCheckerLeft;
     private BoxCollider2D wallCheckerRight;
 
+    private int currentScreenIndex = 0;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -100,7 +102,7 @@ public class characterMovement : MonoBehaviour
             motion.y = -0.5f;
         }
 
-        // Move player
+        // Handle movement
         if (horizontalMovement == -1)
         {
             if (motion.x > 0.0f) // If the player is moving in the opposite direction
@@ -170,8 +172,19 @@ public class characterMovement : MonoBehaviour
             gravity = baseGravity;
         }
 
-        // Actually move the player
+
+        // Move player
         rigidbody.velocity = motion;
+
+        // Move the camera if the player exits the screen
+        if (rigidbody.position.x > Camera.main.transform.position.x + Camera.main.orthographicSize * Camera.main.aspect)
+        {
+            Camera.main.transform.position = new Vector3(Camera.main.transform.position.x + Camera.main.orthographicSize * Camera.main.aspect * 2, Camera.main.transform.position.y, Camera.main.transform.position.z);
+        }
+        else if (rigidbody.position.x < Camera.main.transform.position.x - Camera.main.orthographicSize * Camera.main.aspect)
+        {
+            Camera.main.transform.position = new Vector3(Camera.main.transform.position.x - Camera.main.orthographicSize * Camera.main.aspect * 2, Camera.main.transform.position.y, Camera.main.transform.position.z);
+        }
     }
     private void OnCollisionEnter2D(Collision2D collision)
     {
