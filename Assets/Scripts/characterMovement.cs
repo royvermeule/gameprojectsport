@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 public class characterMovement : MonoBehaviour
 {
-    private const float acceleration     = 150.0f;
+    private const float acceleration     = 200.0f;
     private const float fastAcceleration = 300.0f;
     private const float maxSpeed         = 13f;
     private const float jumpForce        = 17.0f;
